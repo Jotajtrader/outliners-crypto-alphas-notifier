@@ -90,6 +90,11 @@ Al principio del script:
 - Detecta posts por la estructura del HTML (header autor · badge "Experto" · fecha). Si Outliners cambia el diseño puede dejar de detectarlos; en ese caso avisa con *"no encuentro posts"* en lugar de fallar en silencio.
 - Proyecto no oficial, sin relación con Outliners.
 
+## Cambios
+
+- **1.1** — Busca los posts en toda la página: Outliners a veces envía el muro "en streaming" (el contenido principal llega vacío y los posts en un bloque oculto), lo que provocaba falsos avisos de *"no encuentro posts"*. El aviso ahora sale solo tras 3 revisiones seguidas sin posts. La recarga de cada 30 min vuelve siempre a Crypto Alphas aunque hayas navegado a otra sección en esa pestaña.
+- **1.0** — Versión inicial.
+
 ## Licencia
 
 MIT

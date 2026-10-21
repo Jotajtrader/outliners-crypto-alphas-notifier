@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Outliners — Notificador Crypto Alphas
 // @namespace    jorge.outliners
-// @version      1.0
+// @version      1.1
 // @description  Revisa el muro Crypto Alphas cada N segundos (sin recargar) y avisa con notificación de escritorio, sonido y opcionalmente Telegram.
 // @match        https://app.outlinersclub.com/*/muro*
 // @grant        GM_notification
@@ -79,15 +79,19 @@
   }
 
   let sessionAlerted = false;
+  let emptyStreak = 0;               // revisiones seguidas sin posts
 
   async function check() {
     try {
       const res = await fetch(FEED_URL, { cache: 'no-store', credentials: 'include' });
       const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
-      const posts = extractPosts(doc.querySelector('main') || doc.body);
+      // Outliners a veces envía la página "en streaming": <main> llega vacío y los posts
+      // vienen en un bloque oculto aparte. Por eso se busca en todo el body (y se deduplica).
+      const posts = extractPosts(doc.body).filter((p, i, a) => a.findIndex((q) => q.id === p.id) === i);
 
       if (!posts.length) {               // login vencido o cambió el HTML
-        if (!sessionAlerted) {
+        emptyStreak++;
+        if (emptyStreak >= 3 && !sessionAlerted) {   // avisa solo tras 3 fallos seguidos (~3 min)
           GM_notification({ title: 'Outliners notifier', text: 'No encuentro posts: ¿sesión vencida? Revisá la pestaña.', timeout: 0 });
           telegram('⚠️ Outliners notifier: no encuentro posts (¿sesión vencida?).');
           sessionAlerted = true;
@@ -95,6 +99,7 @@
         return;
       }
       sessionAlerted = false;
+      emptyStreak = 0;
 
       if (TEST_ON_LOAD && !window.__alphasTested) {
         window.__alphasTested = true;
@@ -121,6 +126,7 @@
 
   check();
   setInterval(check, POLL_SECONDS * 1000);
-  setTimeout(() => location.reload(), HARD_RELOAD_MIN * 60 * 1000);
+  // Vuelve siempre a Crypto Alphas (aunque hayas navegado a otra sección en esta pestaña)
+  setTimeout(() => { location.href = FEED_URL; }, HARD_RELOAD_MIN * 60 * 1000);
   console.log(`[Alphas] notificador activo: cada ${POLL_SECONDS}s`);
 })();
